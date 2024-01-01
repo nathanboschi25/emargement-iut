@@ -1,0 +1,155 @@
+#!./.venv/bin/python
+
+import argparse
+import datetime
+import os
+import zoneinfo
+
+import pdfkit
+import requests
+from dotenv import load_dotenv
+from ics import Calendar
+from jinja2 import Template
+
+
+class Colors:
+    PURPLE = '\033[95m'
+    CYAN = '\033[96m'
+    DARKCYAN = '\033[36m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    END = '\033[0m'
+
+
+load_dotenv()
+
+
+def get_args():
+    parser = argparse.ArgumentParser(description='Generate a PDF file from a template.', add_help=True)
+    parser.add_argument('-t', '--template', type=str, help='Template file path', default='template.html')
+    parser.add_argument('-o', '--output', type=str, help='Output file path', default='generated_file.pdf')
+    parser.add_argument('-d', '--day', type=datetime.date.fromisoformat, help='Day to generate - format "1999-12-31"',
+                        default=datetime.date.today())
+    parser.add_argument('-p', '--print', action='store_true', help='Print the file after generation')
+    return parser.parse_args()
+
+
+def extract_teacher_name_from_text(text, teacher_list):
+    """
+    Extract the teacher name from a text
+    :param text: text to extract the teacher name from
+    :param teacher_list: list of teachers
+    :return: the teacher name or ' - - - ' if not found
+    """
+    for teacher in teacher_list:
+        if teacher in text:
+            return teacher
+    return (' - - - ')
+
+
+def get_events_from_ade(url, teacher_list, day, course_list=[]):
+    """
+    Get the events from an ics file (at the url) and return a list of events
+    :param url: url of the ics file
+    :param teacher_list: list of teachers
+    :param day: day to get the events from
+    :param course_list: list of courses to override the one in the ics file
+    :return: list of events for the day (start, end, title, teacher)
+    """
+    tz_UTC = zoneinfo.ZoneInfo('UTC')
+    tz_FR = zoneinfo.ZoneInfo('Europe/Paris')
+
+    calendar = Calendar(requests.get(url).text)
+    events = []
+    if len(course_list) == 0:
+        for event in calendar.events:
+            if event.begin.date() == day:
+                events.append({'start': event.begin.datetime.replace(tzinfo=tz_UTC).astimezone(tz_FR).time().isoformat(
+                    timespec='minutes'),
+                    'end': event.end.datetime.replace(tzinfo=tz_UTC).astimezone(tz_FR).time().isoformat(
+                        timespec='minutes'), 'title': event.name,
+                    'teacher': extract_teacher_name_from_text(event.description, teacher_list)})
+        return events.sort(key=lambda x: x['start'])
+    return course_list
+
+
+def render_template_to_html_as_str(template_file, **kwargs):
+    with (open(template_file, 'rb')) as f:
+        return Template(f.read().decode('utf-8')).render(**kwargs)
+
+
+def connect_to_vpn():
+    print(f'{Colors.BOLD + Colors.BLUE}Connecting to {os.getenv("VPN_NAME")}...{Colors.END}')
+    os.system(f'nmcli con up {os.getenv("VPN_NAME")}')
+
+
+def disconnect_from_vpn():
+    print(f'{Colors.BOLD + Colors.BLUE}Disconnecting from {os.getenv("VPN_NAME")}...{Colors.END}')
+    os.system(f'nmcli con down {os.getenv("VPN_NAME")}')
+
+
+if __name__ == '__main__':
+    program_args = get_args()
+
+    print(f'{Colors.BOLD + Colors.BLUE}Generating file for {program_args.day}...{Colors.END}')
+
+    print(f'Class: {os.getenv("CLASS")}')
+
+    students = os.getenv('STUDENTS').split(',')
+    students.sort()
+    print(f'Students: {students}')
+
+    teachers = os.getenv('TEACHERS').split(',')
+    teachers.sort()
+    print(f'Teachers: {teachers}')
+
+    events = get_events_from_ade(os.getenv('ADE_URL'), teachers, program_args.day)
+    print(f'Courses: {events}')
+
+    if not events:
+        print(f'{Colors.BOLD + Colors.RED}No courses for this day.{Colors.END}')
+        if input('Do you want to generate a file with clear courses? (y/n) ') == 'y':
+            events = [{'start': '', 'end': '', 'title': '', 'teacher': ''}] * 5
+        else:
+            exit(0)
+
+    html = render_template_to_html_as_str(program_args.template, len=len,
+                                          classe=os.getenv('CLASS'),
+                                          day=program_args.day.strftime('%d/%m/%Y'),
+                                          students=students,
+                                          cours=events)
+
+    config = pdfkit.configuration(wkhtmltopdf="./wkhtmltox/bin/wkhtmltopdf")
+    pdfkit.from_string(html, program_args.output,
+                       options={"margin-left": "5mm", "margin-right": "5mm", "margin-bottom": "5mm",
+                                "margin-top": "5mm", "encoding": "utf-8"}, configuration=config)
+
+    if program_args.print:
+
+        connect_to_vpn()
+
+        print(f'{Colors.BOLD + Colors.BLUE}Copying file...{Colors.END}')
+        # Copy the file on the remote server
+        result = os.system(
+            f'scp {program_args.output} {os.getenv("SSH_USER")}@{os.getenv("SSH_HOST")}:~/')
+
+        if result != 0:
+            print(f'{Colors.BOLD + Colors.RED}Error while copying the file.{Colors.END}')
+            disconnect_from_vpn()
+            exit(1)
+
+        print(f'{Colors.BOLD + Colors.BLUE}Printing file...{Colors.END}')
+        # Print the file on the remote server
+        result = os.system(
+            f'ssh {os.getenv("SSH_USER")}@{os.getenv("SSH_HOST")} "lp -d HP_Espace_Etu ~/{program_args.output}"')
+
+        if result != 0:
+            print(f'{Colors.BOLD + Colors.RED}Error while printing the file.{Colors.END}')
+            disconnect_from_vpn()
+            exit(1)
+
+        disconnect_from_vpn()

@@ -1,1 +1,4 @@
 /.env
+/.venv/*
+/generated_file.pdf
+/.idea/*

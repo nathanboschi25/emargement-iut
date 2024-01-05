@@ -1,0 +1,21 @@
+#!/bin/sh
+
+echo "Installing print-emargement"
+echo "Credits: Nathan BOSCHI, 2023"
+echo "============================"
+
+echo "Creating virtual environment..."
+python3 -m venv .venv
+echo "Activating virtual environment..."
+. .venv/bin/activate
+echo "Installing dependencies..."
+pip install -r requirements.txt
+
+echo "Opening config file..."
+cp .env.example .env
+editor .env
+
+echo "chmod +x on ./generate..."
+chmod +x ./generate
+
+echo "Done! Run ./generate. \a"

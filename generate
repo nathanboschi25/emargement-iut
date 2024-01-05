@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
     if not events:
         print(f'{Colors.BOLD + Colors.RED}No courses for this day.{Colors.END}')
-        if input('Do you want to generate a file with clear courses? (y/n) ') == 'y':
+        if input('Do you want to generate a file with no courses? (y/n) ') == 'y':
             events = [{'start': '', 'end': '', 'title': '', 'teacher': ''}] * 5
         else:
             exit(0)
@@ -145,7 +145,7 @@ if __name__ == '__main__':
         print(f'{Colors.BOLD + Colors.BLUE}Printing file...{Colors.END}')
         # Print the file on the remote server
         result = os.system(
-            f'ssh {os.getenv("SSH_USER")}@{os.getenv("SSH_HOST")} "lp -d HP_Espace_Etu ~/{program_args.output}"')
+            f'ssh {os.getenv("SSH_USER")}@{os.getenv("SSH_HOST")} "lp -d {os.getenv("PRINTER_ADDRESS")} ~/{program_args.output}"')
 
         if result != 0:
             print(f'{Colors.BOLD + Colors.RED}Error while printing the file.{Colors.END}')

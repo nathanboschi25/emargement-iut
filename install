@@ -15,7 +15,4 @@ echo "Opening config file..."
 cp .env.example .env
 editor .env
 
-echo "chmod +x on ./generate..."
-chmod +x ./generate
-
 echo "Done! Run ./generate. \a"

@@ -14,7 +14,6 @@ Script python permettant de générer la fiche d'émargement pour les alternants
 - Installer les dépendances avec `pip install -r requirements.txt`
 - Désactiver l'environnement virtuel
 - Configurer les variables d'environnement (voir ci-dessous)
-- Autoriser l'exécution du script principal avec `chmod +x ./generate`
 
 > **Note :** Le script `./install` permet d'automatiser l'installation en réalisant les étapes ci-dessus.
 

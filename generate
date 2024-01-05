@@ -34,7 +34,6 @@ def get_args():
     parser.add_argument('-o', '--output', type=str, help='Output file path', default='generated_file.pdf')
     parser.add_argument('-d', '--day', type=datetime.date.fromisoformat, help='Day to generate - format "1999-12-31"',
                         default=datetime.date.today())
-    parser.add_argument('-p', '--print', action='store_true', help='Print the file after generation')
     return parser.parse_args()
 
 
@@ -128,7 +127,7 @@ if __name__ == '__main__':
                        options={"margin-left": "5mm", "margin-right": "5mm", "margin-bottom": "5mm",
                                 "margin-top": "5mm", "encoding": "utf-8"}, configuration=config)
 
-    if program_args.print:
+    if input('Do you want to print the file? (y/n) ') == 'y':
 
         connect_to_vpn()
 

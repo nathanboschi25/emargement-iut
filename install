@@ -15,4 +15,4 @@ echo "Opening config file..."
 cp .env.example .env
 editor .env
 
-echo "Done! Run ./generate. \a"
+echo "Done! Run ./generate -h to get started"

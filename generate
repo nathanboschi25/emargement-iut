@@ -1,6 +1,7 @@
 #!./.venv/bin/python
 
 import argparse
+import base64
 import datetime
 import os
 import zoneinfo
@@ -28,7 +29,8 @@ class Colors:
 def get_args():
     parser = argparse.ArgumentParser(description='Generate signature paper from a template file.', add_help=True)
     parser.add_argument('-e', '--env-version', type=str, help='Env file path', default='.env')
-    parser.add_argument('-q', '--quick', action='store_true', help='Quick mode - no questions asked')
+    parser.add_argument('-q', '--quick', action='store_true',
+                        help='Quick mode - no questions asked - document is printed if possible')
     parser.add_argument('-t', '--template', type=str, help='Template file path', default='template.html')
     parser.add_argument('-o', '--output', type=str, help='Output file path', default='generated_file.pdf')
     parser.add_argument('-d', '--day', type=datetime.date.fromisoformat, help='Day to generate - format "1999-12-31"',
@@ -65,12 +67,10 @@ def get_events_from_ade(url, teacher_list, day):
     ade_events = []
     for event in calendar.events:
         if event.begin.date() == day:
-            ade_events.append(
-                {'start': event.begin.datetime.replace(tzinfo=tz_UTC).astimezone(tz_FR).time().isoformat(
-                    timespec='minutes'),
-                    'end': event.end.datetime.replace(tzinfo=tz_UTC).astimezone(tz_FR).time().isoformat(
-                        timespec='minutes'), 'title': event.name,
-                    'teacher': extract_teacher_name_from_text(event.description, teacher_list)})
+            ade_events.append({'start': event.begin.datetime.replace(tzinfo=tz_UTC).astimezone(tz_FR).time().isoformat(
+                timespec='minutes'),
+                'end': event.end.datetime.replace(tzinfo=tz_UTC).astimezone(tz_FR).time().isoformat(timespec='minutes'),
+                'title': event.name, 'teacher': extract_teacher_name_from_text(event.description, teacher_list)})
     ade_events.sort(key=lambda x: x['start'])
     return ade_events
 
@@ -129,8 +129,7 @@ def generate_and_print_document(program_args, quick=False):
 
         print(f'{Colors.BOLD + Colors.BLUE}Copying file...{Colors.END}')
         # Copy the file on the remote server
-        result = os.system(
-            f'scp {program_args.output} {os.getenv("SSH_USER")}@{os.getenv("SSH_HOST")}:~/')
+        result = os.system(f'scp {program_args.output} {os.getenv("SSH_USER")}@{os.getenv("SSH_HOST")}:~/')
 
         if result != 0:
             print(f'{Colors.BOLD + Colors.RED}Error while copying the file.{Colors.END}')
@@ -150,16 +149,25 @@ def generate_and_print_document(program_args, quick=False):
         disconnect_from_vpn()
 
 
+def get_image_base64(dept_name):
+    # search for the image in the images folder
+    imagepath = os.path.join('assets', 'logos-iut', dept_name + '.png')
+    with open(imagepath, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read())
+        return encoded_string.decode('utf-8')
+
+
 def generate_pdf(program_args, events, students):
-    html = render_template_to_html_as_str(program_args.template, len=len,
+    html = render_template_to_html_as_str(program_args.template,
+                                          dep_logo=get_image_base64(os.getenv('DEPT')),
+                                          len=len,
                                           classe=os.getenv('CLASS'),
-                                          day=program_args.day.strftime('%d/%m/%Y'),
-                                          students=students,
-                                          cours=events)
+                                          day=program_args.day.strftime('%d/%m/%Y'), students=students, cours=events)
     config = pdfkit.configuration(wkhtmltopdf="./wkhtmltox/bin/wkhtmltopdf")
     pdfkit.from_string(html, program_args.output,
                        options={"margin-left": "5mm", "margin-right": "5mm", "margin-bottom": "5mm",
-                                "margin-top": "5mm", "encoding": "utf-8"}, configuration=config)
+                                "margin-top": "5mm", "encoding": "utf-8", "enable-local-file-access": None},
+                       configuration=config)
 
 
 if __name__ == '__main__':

@@ -22,7 +22,7 @@ def generate_pdf(program_args, events, students):
     html = render_template_to_html_as_str(program_args.template, dep_logo=get_image_base64(os.getenv('DEPT')), len=len,
                                           classe=os.getenv('CLASS'), day=program_args.day.strftime('%d/%m/%Y'),
                                           students=students, cours=events)
-    config = pdfkit.configuration(wkhtmltopdf="./wkhtmltox/bin/wkhtmltopdf")
+    config = pdfkit.configuration(wkhtmltopdf=os.getenv('WKHTMLTOPDF_PATH'))
     pdfkit.from_string(html, program_args.output,
                        options={"margin-left": "5mm", "margin-right": "5mm", "margin-bottom": "5mm",
                                 "margin-top": "5mm", "encoding": "utf-8"}, configuration=config)

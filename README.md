@@ -29,9 +29,9 @@ Le fichier `.env.example` contient un exemple de fichier de configuration. Il fa
 - `PRINTER_ADDRESS` : Adresse de l'imprimante (ex: `HP_Espace_Etu`)
 
 ## Utilisation
-Le script principal est `./generate`. Il s'exécute **automatiquement** dans l'env. virtuel.
+Le script principal est `./generate`. Il s'exécute **automatiquement** dans l'env. virmtuel.
 
-### **Aide :**
+### Aide
 ```
 ╰─$ ./generate -h
 usage: generate [-h] [-t TEMPLATE] [-o OUTPUT] [-d DAY]

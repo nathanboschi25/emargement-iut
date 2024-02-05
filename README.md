@@ -8,6 +8,7 @@ Script python permettant de générer la fiche d'émargement pour les alternants
 - python3-venv
 - Connexion VPN IUT
 - Avoir configuré une connexion SSH par clé publique/privée avec l'IUT
+- nmcli pour la connexion VPN
 
 ## Installation
 

@@ -2,6 +2,8 @@
 
 Script python permettant de générer la fiche d'émargement pour les alternants de l'IUT NFC (Dept. INFO)
 
+Script uniquement testé sur Ubuntu 22.04 et 23.10 😇
+
 ## Pré-requis
 
 - Python 3.6 ou supérieur

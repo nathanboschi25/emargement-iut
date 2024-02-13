@@ -1,4 +1,5 @@
 import base64
+from datetime import datetime
 import os
 
 import pdfkit
@@ -23,6 +24,10 @@ def generate_pdf(program_args, events, students):
                                           classe=os.getenv('CLASS'), day=program_args.day.strftime('%d/%m/%Y'),
                                           students=students, cours=events)
     config = pdfkit.configuration(wkhtmltopdf=os.getenv('WKHTMLTOPDF_PATH'))
+    today = datetime.now().strftime("%d/%m/%Y")
+
     pdfkit.from_string(html, program_args.output,
                        options={"margin-left": "5mm", "margin-right": "5mm", "margin-bottom": "5mm",
-                                "margin-top": "5mm", "encoding": "utf-8"}, configuration=config)
+                                "margin-top": "5mm", "encoding": "utf-8",
+                                "footer-center": "Fiche générée le {} avec emargement-iut © Nathan BOSCHI\nVoir https://github.com/nathanboschi25/emargement-iut".format(today),
+                                "footer-font-size": "8"}, configuration=config)

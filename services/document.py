@@ -29,5 +29,5 @@ def generate_pdf(program_args, events, students):
     pdfkit.from_string(html, program_args.output,
                        options={"margin-left": "5mm", "margin-right": "5mm", "margin-bottom": "5mm",
                                 "margin-top": "5mm", "encoding": "utf-8",
-                                "footer-center": "Fiche générée le {} avec emargement-iut © Nathan BOSCHI\nVoir https://github.com/nathanboschi25/emargement-iut".format(today),
+                                "footer-center": "Fiche générée le {} avec emargement-iut © Nathan BOSCHI\nVoir https://github.com/nathanboschi25/emargement-iut\n".format(today),
                                 "footer-font-size": "8"}, configuration=config)

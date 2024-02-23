@@ -63,6 +63,13 @@ def initial_actions_return_values(program_args):
 
     return events, students
 
+def find_host(hosts):
+    for host in hosts.split(','):
+        result = os.system(f'ping -w 1 -c 1 {host}')
+        if result == 0:
+            return host
+    return None
+
 
 def generate_and_print_document(program_args, quick=False):
     (events, students) = initial_actions_return_values(program_args)
@@ -82,9 +89,15 @@ def generate_and_print_document(program_args, quick=False):
 
         connect_to_vpn()
 
+        ssh_host = find_host(os.getenv("SSH_HOSTS"))
+        if ssh_host is None:
+            print(f'{TextStyles.BOLD + TextStyles.COLOR_RED}No host found to print the file.{TextStyles.CLEAR_STYLES}')
+            disconnect_from_vpn()
+            exit(1)
+
         print(f'{TextStyles.BOLD + TextStyles.COLOR_BLUE}Copying file...{TextStyles.CLEAR_STYLES}')
         # Copy the file on the remote server
-        result = os.system(f'scp {program_args.output} {os.getenv("SSH_USER")}@{os.getenv("SSH_HOST")}:~/')
+        result = os.system(f'scp {program_args.output} {ssh_host}@{os.getenv("SSH_HOST")}:~/')
 
         if result != 0:
             print(f'{TextStyles.BOLD + TextStyles.COLOR_RED}Error while copying the file.{TextStyles.CLEAR_STYLES}')
@@ -92,9 +105,15 @@ def generate_and_print_document(program_args, quick=False):
             exit(1)
 
         print(f'{TextStyles.BOLD + TextStyles.COLOR_BLUE}Printing file...{TextStyles.CLEAR_STYLES}')
+
         # Print the file on the remote server
+        if ssh_host is None:
+            print(f'{TextStyles.BOLD + TextStyles.COLOR_RED}Error while finding a host to print the file.{TextStyles.CLEAR_STYLES}')
+            disconnect_from_vpn()
+            exit(1)
+
         result = os.system(
-            f'ssh {os.getenv("SSH_USER")}@{os.getenv("SSH_HOST")} "lp -d {os.getenv("PRINTER_ADDRESS")} ~/{program_args.output}"')
+            f'ssh {os.getenv("SSH_USER")}@{ssh_host} "lp -d {os.getenv("PRINTER_ADDRESS")} ~/{program_args.output}"')
 
         if result != 0:
             print(f'{TextStyles.BOLD + TextStyles.COLOR_RED}Error while printing the file.{TextStyles.CLEAR_STYLES}')
